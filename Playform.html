@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#0e110f" />
+<title>PLAYFORM — Universal Touch Controller</title>
+<style>
+:root{color-scheme:dark;--bg:#0e110f;--ink:#eff2eb;--muted:#8f998f;--lime:#c6f277;--blue:#89c6ff;--orange:#ff9b65;--violet:#d5a4ff;--line:#ffffff17;font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% -20%,#2f3a2b,transparent 55%),var(--bg);color:var(--ink);user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:none}
+button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.dot{width:8px;height:8px;border-radius:9px;background:#737c73;flex:none}.dot.live{background:var(--lime);box-shadow:0 0 12px #c6f277aa}
+
+/* views */
+.view{position:fixed;inset:0;display:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body[data-view=menu] #menu{display:grid}body[data-view=play] #play{display:flex}
+
+/* splash */
+#splash{position:fixed;inset:0;z-index:20;display:grid;place-content:center;justify-items:center;gap:22px;background:var(--bg);transition:opacity .5s,visibility .5s}
+#splash.out{opacity:0;visibility:hidden}
+.mark{display:grid;place-items:center;width:84px;height:84px;border-radius:24px;background:var(--lime);color:#172012;font-size:46px;animation:pop .9s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{from{transform:scale(.2) rotate(-140deg);opacity:0}to{transform:scale(1) rotate(-6deg);opacity:1}}
+.word{display:flex;font-size:clamp(30px,9vw,52px);font-weight:800;letter-spacing:.12em;margin-right:-.12em}
+.word span{display:inline-block;animation:rise .6s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(.55s + var(--i)*.07s)}
+@keyframes rise{from{transform:translateY(60%);opacity:0}to{transform:none;opacity:1}}
+.loader{width:min(220px,60vw);height:3px;border-radius:3px;background:#ffffff14;overflow:hidden}
+.loader i{display:block;height:100%;background:var(--lime);transform-origin:left;animation:fill 1.7s .7s cubic-bezier(.6,0,.3,1) both}
+@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.skip{color:var(--muted);font-size:12px;animation:rise .6s 1.4s both}
+
+/* menu */
+#menu{grid-template-rows:minmax(0,1fr);place-content:stretch;padding: max(10px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left));overflow:hidden;animation:fade .5s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+#menu .in{width:min(520px,100%);height:100%;max-height:100%;display:grid;grid-template-areas:"brand" "intro" "options" "credits";grid-template-rows:auto auto minmax(0,1fr) auto;gap:clamp(8px,2.5vh,20px);margin:auto;padding:clamp(16px,3vw,28px);border:1px solid #ffffff12;border-radius:26px;background:linear-gradient(145deg,#171c18ed,#111512f2);box-shadow:0 24px 80px #0006,inset 0 1px #ffffff0a;backdrop-filter:blur(18px)}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.14em;font-size:13px}
+.brand .mark{width:32px;height:32px;border-radius:10px;font-size:18px;animation:none;transform:rotate(-6deg)}
+.status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);letter-spacing:0;font-weight:600;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:#ffffff06}
+.eyebrow{color:var(--lime);font-size:10px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;margin:0 0 9px}
+h1{font-size:clamp(32px,7vw,48px);letter-spacing:-.055em;line-height:.98;margin:0 0 11px}
+.lead{color:var(--muted);font-size:14px;line-height:1.5;margin:0;max-width:34ch}
+.opts{display:grid;min-height:0;gap:10px;align-content:start;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}.opts::-webkit-scrollbar{display:none}
+.opt{text-align:left;display:grid;gap:3px;padding:15px 17px;border-radius:15px;border:1px solid var(--line);background:linear-gradient(135deg,#202620,#171b18);touch-action:manipulation;transition:border-color .15s,transform .1s,background .15s}
+.opt:hover{border-color:#697568;background:linear-gradient(135deg,#282f28,#1a1f1b)}.opt:active{transform:scale(.985)}
+.opt b{font-size:15px}.opt small{color:var(--muted);font-size:12px;line-height:1.4}
+.opt.primary{background:linear-gradient(130deg,#d5ff8d,#b8e967);border-color:#d5ff8d;color:#172012;box-shadow:0 8px 24px #b8e96724}.opt.primary small{color:#3d4a2a}
+.credits{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.credits strong{color:var(--ink);font-weight:600}.credit-links{display:flex;gap:12px}.credits a{color:var(--muted);text-decoration:none;border-bottom:1px solid #697568;touch-action:manipulation}.credits a:hover{color:var(--lime);border-color:var(--lime)}
+.brand{grid-area:brand}#menu .in>div:nth-child(2){grid-area:intro}.opts{grid-area:options}.credits{grid-area:credits}
+@media(min-aspect-ratio:13/10) and (min-width:760px){#menu .in{width:min(1000px,100%);grid-template-areas:"brand brand" "intro options" "credits credits";grid-template-columns:.9fr 1.1fr;grid-template-rows:auto minmax(0,1fr) auto;align-items:center;gap:clamp(8px,2.5vh,18px)}}
+@media(max-height:480px){#menu .in{gap:8px;padding:12px 18px;border-radius:20px}.brand .mark{width:27px;height:27px;font-size:16px}h1{font-size:clamp(26px,6vh,38px);margin-bottom:5px}.eyebrow{font-size:9px;margin-bottom:5px}.lead{font-size:12px;line-height:1.35}.opts{gap:6px}.opt{padding:8px 12px;border-radius:12px}.opt b{font-size:13px}.opt small{font-size:11px;line-height:1.25}.credits{padding-top:6px}.status{padding:6px 9px}}
+
+/* play */
+#play{flex-direction:column;--k:min(calc((100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/37.5),calc((100svh - 64px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))/13.5))}
+.tiny{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;color:#b6beb5;touch-action:manipulation}.tiny:hover{color:var(--ink);border-color:#697568}
+.conn{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);min-width:0}.conn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.key{display:grid;place-items:center;border:1px solid #ffffff14;background:linear-gradient(145deg,#3a423b,#2a302b);box-shadow:0 4px 7px #0006,inset 0 1px #ffffff14;color:#c0c8be;font-weight:700;font-size:calc(var(--k)*.7);transition:transform .07s,background .07s,color .07s}
+.key.down,.key:active{transform:scale(.94);background:var(--c,var(--lime));color:#121809}
+.shoulder{width:calc(var(--k)*4.6);height:calc(var(--k)*2.1);border-radius:calc(var(--k)*.9) calc(var(--k)*.9) calc(var(--k)*.4) calc(var(--k)*.4)}
+.trigger{width:calc(var(--k)*4.6);height:calc(var(--k)*2.1);border-radius:calc(var(--k)*1.1)}
+.dpad{width:calc(var(--k)*6.9);height:calc(var(--k)*6.9);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:2px;flex:none}
+.dpad:before{content:"";grid-area:2/2;background:#2c332d;border-radius:4px}
+.dpad .key{font-size:calc(var(--k)*1)}
+.up{grid-area:1/2;border-radius:calc(var(--k)*.7) calc(var(--k)*.7) 4px 4px}.dn{grid-area:3/2;border-radius:4px 4px calc(var(--k)*.7) calc(var(--k)*.7)}.lf{grid-area:2/1;border-radius:calc(var(--k)*.7) 4px 4px calc(var(--k)*.7)}.rt{grid-area:2/3;border-radius:4px calc(var(--k)*.7) calc(var(--k)*.7) 4px}
+.abxy{width:calc(var(--k)*7.5);height:calc(var(--k)*7.5);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:2px;flex:none;place-items:center}
+.face{width:100%;height:100%;border-radius:50%;color:var(--c);font-size:calc(var(--k)*.95);font-weight:800;border-color:color-mix(in srgb,var(--c) 45%,transparent);position:relative;isolation:isolate}
+.n{grid-area:1/2}.w{grid-area:2/1}.e{grid-area:2/3}.s{grid-area:3/2}
+.stick{position:relative;width:calc(var(--k)*5.2);height:calc(var(--k)*5.2);border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#383f39,#1f2420 70%);border:1px solid #ffffff19;box-shadow:inset 0 3px 9px #0008,0 4px 6px #0004;display:grid;place-items:center;touch-action:none}
+.stick:before{content:"";position:absolute;inset:16%;border-radius:50%;border:1px dashed #ffffff22}
+.cap{width:var(--cap-size,52%);height:var(--cap-size,52%);border-radius:50%;background:repeating-radial-gradient(circle,#ffffff14 0 2px,transparent 2px 5px),radial-gradient(circle at 35% 30%,#78837a,#3e463f);border:1px solid #ffffff2a;box-shadow:0 4px 9px #0008,inset 0 1px #ffffff2a;pointer-events:none;position:relative;will-change:transform}
+.cb{width:calc(var(--k)*4.8);height:calc(var(--k)*1.9);border-radius:calc(var(--k)*.5);font-size:calc(var(--k)*.55);letter-spacing:.04em}
+
+@media(orientation:portrait){#play{--k:min(calc((100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/15.6),calc((100svh - 64px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))/25))}}
+
+.bar{flex:none;min-height:48px;padding:6px 14px;display:flex;align-items:center}
+.nav,.ed{display:flex;align-items:center;gap:10px;width:100%}.nav{justify-content:space-between}.ed{display:none;flex-wrap:wrap;gap:8px}
+#play.editing .nav{display:none}#play.editing .ed{display:flex}
+.ed input{width:96px;accent-color:var(--lime)}.ed label,#selName{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}#selName{min-width:88px}
+.tiny.done{background:var(--lime);border-color:var(--lime);color:#182012;font-weight:700}.tiny:disabled{opacity:.4}
+.pad{flex:1;min-height:0;margin:0 12px 12px;border-radius:calc(var(--k)*1.6);border:1px solid #ffffff14;background:linear-gradient(150deg,#262d27,#171b18 70%);box-shadow:0 18px 55px #0007,inset 0 1px #ffffff0f;position:relative;overflow:hidden;touch-action:none}
+.pad>[data-w]{position:absolute;translate:-50% -50%;opacity:var(--op,1)}
+.pad>.hid{visibility:hidden;pointer-events:none}
+.pad.edit>[data-w]{opacity:1;pointer-events:auto;cursor:grab;outline:1.5px dashed #c6f27766;outline-offset:3px}
+.pad.edit>.hid{visibility:visible;opacity:.3}.pad.edit>.sel{outline:2px solid var(--lime)}.pad.edit>.bad{outline:2px solid #ff6b6b}
+.pad.edit [data-w] *{pointer-events:none}.pad.edit .key:active{transform:none;background:linear-gradient(145deg,#3a423b,#2a302b);color:#c0c8be}
+/* dialogs + toast */
+dialog{border:1px solid #ffffff1f;border-radius:17px;background:#1a1f1b;color:var(--ink);padding:0;width:min(430px,calc(100% - 28px));box-shadow:0 24px 100px #000b;user-select:text}
+dialog::backdrop{background:#080a08c9}
+.di{padding:21px}.dt{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:750}
+.close{font-size:24px;color:#9ba59b;touch-action:manipulation}
+.dc{color:#98a197;font-size:13px;line-height:1.5;margin:8px 0 16px}
+.ml{display:grid;gap:8px;max-height:48vh;overflow:auto}
+.mr{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;background:#232923;border-radius:9px;padding:9px 11px;font-size:13px}
+.mr select{background:#181d19;color:#dce2d7;border:1px solid #3b443b;border-radius:6px;padding:7px;font:inherit}
+.save{width:100%;margin-top:15px;padding:12px;background:var(--lime);color:#182012;border-radius:10px;font-weight:750;touch-action:manipulation}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#283126;border:1px solid #697d4d;color:#e7f4d3;padding:10px 15px;border-radius:10px;font-size:13px;transition:.2s;z-index:30;max-width:calc(100% - 28px);text-align:center}
+.toast.show{transform:translate(-50%,0);opacity:1}
+#orientationGate{display:none;position:fixed;inset:0;z-index:60;place-items:center;padding:28px;background:#0e110f;color:var(--ink);text-align:center}
+#orientationGate .gate-card{width:min(420px,100%);display:grid;justify-items:center;gap:15px}
+#orientationGate .gate-mark{font-size:44px;color:var(--lime)}#orientationGate h2{margin:0;font-size:25px}#orientationGate p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+#landscapeBtn{padding:12px 18px;background:var(--lime);color:#172012;border-radius:10px;font-weight:750;touch-action:manipulation}
+@media(orientation:portrait){#orientationGate{display:grid}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important;transition:none!important}}
+</style>
+</head>
+<body data-view="menu">
+
+<aside id="orientationGate" aria-label="Landscape orientation required"><div class="gate-card"><div class="gate-mark">↻</div><h2>Turn your phone sideways</h2><p>PLAYFORM is designed for landscape. Tap below to try locking the screen. Some browsers block orientation lock; if that happens, rotate your phone manually.</p><button id="landscapeBtn">Use landscape</button></div></aside>
+
+<div id="splash"><div class="mark">✳</div>
+  <div class="word" aria-label="PLAYFORM"><span style="--i:0">P</span><span style="--i:1">L</span><span style="--i:2">A</span><span style="--i:3">Y</span><span style="--i:4">F</span><span style="--i:5">O</span><span style="--i:6">R</span><span style="--i:7">M</span></div>
+  <div class="loader"><i></i></div><div class="skip">Tap to skip</div></div>
+
+<main class="view" id="menu"><div class="in">
+  <div class="brand"><div class="mark">✳</div>PLAYFORM<div class="status"><i class="dot"></i><span class="connLabel">Not connected</span></div></div>
+  <div><p class="eyebrow">Mobile gamepad · Bluetooth</p><h1>Your controller,<br>your way.</h1><p class="lead">Connect to your PC, jump straight into play, or tune every control to fit your hands.</p></div>
+  <div class="opts">
+    <button class="opt primary" id="connectBtn"><b>Connect over Bluetooth</b><small>Start the PLAYFORM receiver on your laptop, then pick “PLAYFORM Controller”.</small></button>
+    <button class="opt" id="resumeBtn" style="display:none"><b>Open controller</b><small>You’re connected. Jump back in.</small></button>
+    <button class="opt" id="playBtn"><b>Try the controller</b><small>Touch or keyboard, without connecting.</small></button>
+    <button class="opt" id="hudBtn"><b>Edit HUD</b><small>Move, resize and hide controls to build your own layout.</small></button>
+    <button class="opt" id="mapBtn"><b>Button mapping</b><small>Choose which button each control sends.</small></button>
+    <button class="opt" id="aboutBtn"><b>How it works</b><small>What you need and what is supported.</small></button>
+    <button class="opt" id="disconnectBtn" style="display:none"><b>Disconnect</b><small>End the Bluetooth session.</small></button>
+  </div>
+  <footer class="credits"><span>Made by <strong>Rishit Maurya</strong></span><nav class="credit-links" aria-label="Creator links"><a href="https://www.instagram.com/_ritz_.here?mdxt=MTdsY25ibHk4NHhzMA==" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://youtube.com/@rishitmaurya-b7r?si=FPsIGVwFhMH8hHgU" target="_blank" rel="noopener noreferrer">YouTube</a></nav></footer>
+  </div></main>
+
+<section class="view" id="play" aria-label="Touch game controller">
+  <div class="bar"><div class="nav"><button class="tiny" id="backBtn">‹ Menu</button><div class="conn"><i class="dot"></i><span class="connLabel">Not connected</span></div><button class="tiny" id="editBtn">Edit</button><button class="tiny" id="fsBtn">Full</button></div>
+  <div class="ed"><button class="tiny done" id="doneBtn">Done</button><button class="tiny" id="resetBtn">Reset</button><span id="selName">Drag a control</span><input type="range" id="sizeR" min=".6" max="1.5" step=".05" aria-label="Control size" disabled><label id="capControl" style="display:none">Stick cap<input type="range" id="capR" min=".35" max=".8" step=".05" value=".52" aria-label="Joystick inner circle size"></label><button class="tiny" id="hideBtn" disabled>Hide</button><label>Opacity<input type="range" id="opR" min=".3" max="1" step=".05" value="1"></label></div></div>
+  <div class="pad" id="pad">
+    <button class="key trigger" data-w="l2" data-button="6">L2</button><button class="key shoulder" data-w="l1" data-button="4">L1</button><button class="key shoulder" data-w="r1" data-button="5">R1</button><button class="key trigger" data-w="r2" data-button="7">R2</button>
+    <div class="dpad" data-w="dpad"><button class="key up" data-button="12" aria-label="D-pad up">↑</button><button class="key lf" data-button="14" aria-label="D-pad left">←</button><button class="key rt" data-button="15" aria-label="D-pad right">→</button><button class="key dn" data-button="13" aria-label="D-pad down">↓</button></div>
+    <div class="stick l" data-w="ls" data-stick="0" aria-label="Left analog stick"><div class="cap"></div></div><div class="stick r" data-w="rs" data-stick="2" aria-label="Right analog stick"><div class="cap"></div></div>
+    <button class="key cb" data-w="sel" data-button="8">SELECT</button><button class="key cb" data-w="plus" data-button="16">＋</button><button class="key cb" data-w="start" data-button="9">START</button>
+    <div class="abxy" data-w="abxy"><button class="key face n" style="--c:var(--blue)" data-button="3" aria-label="Y">Y</button><button class="key face w" style="--c:var(--violet)" data-button="2" aria-label="X">X</button><button class="key face e" style="--c:var(--orange)" data-button="1" aria-label="B">B</button><button class="key face s" style="--c:var(--lime)" data-button="0" aria-label="A">A</button></div>
+  </div>
+</section>
+
+<dialog id="mappingDialog"><div class="di"><div class="dt">Button mapping<button class="close" data-close="mappingDialog" aria-label="Close">×</button></div><p class="dc">Choose the standard gamepad button for each touch control. Changes are saved on this device.</p><div class="ml" id="mappingList"></div><button class="save" id="saveMapping">Save layout</button></div></dialog>
+<dialog id="aboutDialog"><div class="di"><div class="dt">How PLAYFORM works<button class="close" data-close="aboutDialog" aria-label="Close">×</button></div><p class="dc">Start the PLAYFORM receiver on your PC before connecting. In the Android app, allow Nearby devices. Android 8–11 also need Location permission and the phone’s Location setting turned on for Bluetooth scans. If permission was denied, open Settings → Apps → PLAYFORM → Permissions and allow it. On the standalone website, connect using a browser with Web Bluetooth support.</p><button class="save" data-close="aboutDialog">Got it</button></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+const names={0:'A',1:'B',2:'X',3:'Y',4:'L1',5:'R1',6:'L2',7:'R2',8:'SELECT',9:'START',12:'D-pad ↑',13:'D-pad ↓',14:'D-pad ←',15:'D-pad →',16:'＋'};
+let mapping={};try{mapping=JSON.parse(localStorage.getItem('playform-map')||'{}')}catch{}
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const pressed=new Set(),held=new Map(),axes=[0,0,0,0],btnEls=$$('[data-button]'),physicalId=k=>Number(mapping[k]??k);
+
+/* gamepad shim: created once, mutated in place */
+const gp={id:'PLAYFORM Generic Controller',index:0,connected:true,mapping:'standard',timestamp:0,axes,buttons:Array.from({length:17},()=>({pressed:false,touched:false,value:0}))};
+try{Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>[gp]})}catch{}
+
+/* bluetooth: one write in flight, always sends the latest state */
+const SERVICE='7f510001-1b15-4f0d-8a70-8f6e1a2b3c40',CHARACTERISTIC='7f510002-1b15-4f0d-8a70-8f6e1a2b3c40';
+let bleDevice=null,chr=null,busy=false,again=false,writeErrorShown=false;
+function encodeState(){
+  const b=new Uint8Array(7);for(const x of pressed)if(x<17)b[x>>3]|=1<<(x&7);
+  for(let i=0;i<4;i++)b[3+i]=Math.round(Math.max(-1,Math.min(1,axes[i]))*127)&255;
+  return b;
+}
+async function send(){
+  if(window.PlayformAndroid){const b=encodeState();window.PlayformAndroid.sendState(btoa(String.fromCharCode(...b)));return}
+  if(!chr)return;if(busy){again=true;return}busy=true;
+  const b=encodeState();
+  try{await chr.writeValueWithResponse(b);writeErrorShown=false}catch(e){if(!writeErrorShown){toast(`Bluetooth input error: ${e.message||e}`);writeErrorShown=true}}
+  busy=false;if(again){again=false;send()}
+}
+let raf=0;
+function flush(){raf=0;btnEls.forEach(el=>el.classList.toggle('down',pressed.has(physicalId(el.dataset.button))));send()}
+function apply(){gp.timestamp=performance.now();gp.buttons.forEach((b,i)=>{const p=pressed.has(i);b.pressed=b.touched=p;b.value=+p});raf||(raf=requestAnimationFrame(flush))}
+const reset=()=>{pressed.clear();held.clear();axes.fill(0);$$('.cap').forEach(c=>c.style.transform='');apply()};
+const go=v=>{document.body.dataset.view=v;edit(false)};
+
+/* splash */
+const splash=$('#splash'),endSplash=()=>{splash.classList.add('out');setTimeout(()=>splash.remove(),600)};
+splash.addEventListener('pointerdown',endSplash);setTimeout(endSplash,matchMedia('(prefers-reduced-motion:reduce)').matches?300:2900);
+
+/* connection */
+function setConnection(on,label){
+  $$('.dot').forEach(d=>d.classList.toggle('live',on));$$('.connLabel').forEach(l=>l.textContent=label);
+  $('#connectBtn').style.display=on?'none':'';$('#resumeBtn').style.display=on?'':'none';$('#disconnectBtn').style.display=on?'':'none';
+}
+if(window.PlayformAndroid)$('#connectBtn small').textContent='Tap to allow Bluetooth access, scan, and choose the PLAYFORM receiver.';
+$('#connectBtn').onclick=async()=>{
+  try{
+    if(window.PlayformAndroid){setConnection(false,'Starting Bluetooth…');window.PlayformAndroid.connect();return}
+    if(!navigator.bluetooth)throw new Error('Web Bluetooth is unavailable. Open this page in Chrome on Android.');
+    if(!window.isSecureContext)throw new Error('This browser blocks Bluetooth on this page origin. Open it as a local file in Chrome on Android.');
+    setConnection(false,'Choose PLAYFORM Controller…');
+    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE]}]});
+    bleDevice.addEventListener('gattserverdisconnected',()=>{chr=null;setConnection(false,'Bluetooth disconnected')});
+    const server=await bleDevice.gatt.connect();
+    chr=await (await server.getPrimaryService(SERVICE)).getCharacteristic(CHARACTERISTIC);
+    setConnection(true,'Connected');toast('Connected over Bluetooth');go('play');
+  }catch(e){chr=null;setConnection(false,'Not connected');toast(e.message||'Bluetooth connection failed')}
+};
+window.playformAndroidConnected=(on,label)=>{setConnection(on,label);if(on){toast('Connected over Bluetooth');go('play')}else if(label&&label!=='Disconnected')toast(label)};
+$('#disconnectBtn').onclick=()=>{if(window.PlayformAndroid)window.PlayformAndroid.disconnect();if(bleDevice?.gatt.connected)bleDevice.gatt.disconnect();chr=null;setConnection(false,'Disconnected')};
+$('#resumeBtn').onclick=$('#playBtn').onclick=()=>go('play');$('#backBtn').onclick=()=>go('menu');
+
+/* buttons */
+function press(key,on){const id=physicalId(key);if(on){pressed.add(id);held.set(key,id)}else{pressed.delete(held.get(key)??id);held.delete(key)}apply()}
+btnEls.forEach(el=>{const key=el.dataset.button,activePointers=new Set(),rel=e=>{e.preventDefault();if(!activePointers.delete(e.pointerId))return;press(key,false)};
+  el.addEventListener('pointerdown',e=>{if(editing)return;e.preventDefault();if(el.matches('.face')){const b=el.getBoundingClientRect(),x=(e.clientX-b.left)/b.width,y=(e.clientY-b.top)/b.height;if(Math.abs(x-.5)+Math.abs(y-.5)>.5)return}activePointers.add(e.pointerId);el.setPointerCapture?.(e.pointerId);press(key,true)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,rel));
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+});
+
+/* sticks: rect cached on touch, cap stays inside the base */
+$$('[data-stick]').forEach(el=>{
+  const cap=$('.cap',el),i=Number(el.dataset.stick);let id=null,cx=0,cy=0,r=1;
+  function move(e){
+    if(e.pointerId!==id)return;
+    let dx=(e.clientX-cx)/(r*.3),dy=(e.clientY-cy)/(r*.3);const m=Math.hypot(dx,dy);
+    if(m>1){dx/=m;dy/=m}
+    axes[i]=Math.abs(dx)<.08?0:dx;axes[i+1]=Math.abs(dy)<.08?0:dy;
+    const travel=Math.min(.24,(1-cap.offsetWidth/el.offsetWidth)/2);
+    cap.style.transform=`translate3d(${dx*el.offsetWidth*travel}px,${dy*el.offsetWidth*travel}px,0)`;apply();
+  }
+  function end(e){if(e.pointerId!==id)return;id=null;axes[i]=axes[i+1]=0;cap.style.transform='';apply()}
+  el.addEventListener('pointerdown',e=>{
+    if(editing||id!==null)return;e.preventDefault();id=e.pointerId;el.setPointerCapture(id);
+    const b=el.getBoundingClientRect();r=b.width;cx=b.left+r/2;cy=b.top+b.height/2;move(e);
+  });
+  el.addEventListener('pointermove',move);
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));
+});
+
+/* keyboard + fullscreen */
+const keyMap={ArrowUp:12,ArrowDown:13,ArrowLeft:14,ArrowRight:15,KeyZ:0,KeyX:1,KeyA:2,KeyS:3,KeyQ:4,KeyE:5,ShiftLeft:6,ShiftRight:7,Enter:9,Backspace:8,Space:16};
+const fs=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();await screen.orientation?.lock?.('landscape')}catch{toast('Rotate your phone sideways to use PLAYFORM')}};
+$('#landscapeBtn').onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();await screen.orientation?.lock?.('landscape');toast('Landscape mode enabled')}catch{toast('This browser cannot lock orientation. Rotate the phone sideways.')}};
+addEventListener('keydown',e=>{if(document.body.dataset.view!=='play'||editing)return;if(keyMap[e.code]!==undefined&&!e.repeat){e.preventDefault();press(String(keyMap[e.code]),true)}else if(e.code==='KeyF'&&!e.repeat)fs()});
+addEventListener('keyup',e=>{if(keyMap[e.code]!==undefined){e.preventDefault();press(String(keyMap[e.code]),false)}});
+addEventListener('blur',reset);document.addEventListener('visibilitychange',()=>document.hidden&&reset());
+$('#fsBtn').onclick=fs;
+
+/* dialogs */
+$('#mapBtn').onclick=()=>{const host=$('#mappingList');host.innerHTML='';
+  [0,1,2,3,4,5,6,7,8,9,12,13,14,15,16].forEach(key=>{
+    const row=document.createElement('label'),sel=document.createElement('select');row.className='mr';sel.dataset.key=key;
+    Object.entries(names).forEach(([id,n])=>sel.append(new Option(n,id,false,physicalId(key)===Number(id))));
+    row.append(Object.assign(document.createElement('span'),{textContent:names[key]}),sel);host.append(row)});
+  $('#mappingDialog').showModal()};
+$('#saveMapping').onclick=()=>{mapping={};$$('select[data-key]').forEach(s=>{if(Number(s.value)!==Number(s.dataset.key))mapping[s.dataset.key]=Number(s.value)});try{localStorage.setItem('playform-map',JSON.stringify(mapping))}catch{}$('#mappingDialog').close();toast('Layout saved on this device')};
+$('#aboutBtn').onclick=()=>$('#aboutDialog').showModal();
+$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
+let tt;function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400)}
+/* custom HUD: drag, resize, hide, opacity; saved per orientation */
+const pad=$('#pad'),play=$('#play'),widgets=$$('.pad>[data-w]'),sizeR=$('#sizeR'),capR=$('#capR'),capControl=$('#capControl'),hideBtn=$('#hideBtn'),opR=$('#opR'),mq=matchMedia('(orientation:portrait)');
+const wn={l2:'L2',l1:'L1',r1:'R1',r2:'R2',dpad:'D-pad',abxy:'A B X Y',ls:'Left stick',rs:'Right stick',sel:'SELECT',plus:'＋',start:'START'};
+const ref={land:[37,15,{l2:[3,1.4],l1:[7.9,1.4],r1:[29.1,1.4],r2:[34,1.4],dpad:[6,7.2],ls:[14.5,10.8],rs:[22.5,10.8],abxy:[31,7.6],sel:[13.5,4.6],plus:[18.5,4.6],start:[23.5,4.6]}],
+ port:[15.3,25,{l2:[3,1.4],r2:[12.3,1.4],l1:[3,4.1],r1:[12.3,4.1],dpad:[3.9,9.6],abxy:[11.3,9.6],ls:[4.6,17],rs:[10.7,17],sel:[2.55,22.6],plus:[7.65,22.6],start:[12.75,22.6]}]};
+let hud={};try{hud=JSON.parse(localStorage.getItem('playform-hud')||'{}')}catch{}
+const ori=()=>mq.matches?'port':'land';
+const defs=o=>{const[w,h,m]=ref[o];return Object.fromEntries(Object.entries(m).map(([k,[x,y]])=>[k,[x/w*100,y/h*100,1,0]]))};
+const lay=()=>{const o=ori();return hud[o]=Object.assign(defs(o),hud[o])};
+const save=()=>{try{localStorage.setItem('playform-hud',JSON.stringify(hud))}catch{}};
+function paint(){const L=lay();widgets.forEach(el=>{const[x,y,s,h]=L[el.dataset.w];el.style.left=x+'%';el.style.top=y+'%';el.style.scale=s;el.classList.toggle('hid',!!h);if(el.matches('[data-stick]'))el.style.setProperty('--cap-size',`${(L[el.dataset.w][4]??.52)*100}%`)});pad.style.setProperty('--op',hud.op??1)}
+const hit=(a,b)=>a.left<b.right+2&&a.right>b.left-2&&a.top<b.bottom+2&&a.bottom>b.top-2;
+function bad(el){const L=lay();if(L[el.dataset.w][3])return false;const a=el.getBoundingClientRect(),p=pad.getBoundingClientRect();
+  return a.left<p.left||a.right>p.right||a.top<p.top||a.bottom>p.bottom||widgets.some(o=>o!==el&&!L[o.dataset.w][3]&&hit(a,o.getBoundingClientRect()))}
+let editing=false,sel=null,drag=null;
+function pick(el){sel=el;widgets.forEach(w=>w.classList.toggle('sel',w===el));$('#selName').textContent=el?wn[el.dataset.w]:'Drag a control';sizeR.disabled=hideBtn.disabled=!el;capControl.style.display=el?.matches('[data-stick]')?'':'none';
+  if(el){const v=lay()[el.dataset.w];sizeR.value=v[2];hideBtn.textContent=v[3]?'Show':'Hide';if(el.matches('[data-stick]'))capR.value=v[4]??.52}}
+function edit(on){editing=on;drag=null;play.classList.toggle('editing',on);pad.classList.toggle('edit',on);reset();pick(null);opR.value=hud.op??1}
+pad.addEventListener('pointerdown',e=>{if(!editing)return;const el=e.target.closest('[data-w]');pick(el);if(!el||drag)return;
+  pad.setPointerCapture(e.pointerId);const v=lay()[el.dataset.w];drag={el,v,id:e.pointerId,x0:e.clientX,y0:e.clientY,ox:v[0],oy:v[1]}});
+pad.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const{el,v}=drag,w=pad.clientWidth,h=pad.clientHeight,r=el.getBoundingClientRect();
+  const x=Math.min(w-r.width/2,Math.max(r.width/2,drag.ox/100*w+e.clientX-drag.x0)),y=Math.min(h-r.height/2,Math.max(r.height/2,drag.oy/100*h+e.clientY-drag.y0));
+  v[0]=x/w*100;v[1]=y/h*100;el.style.left=v[0]+'%';el.style.top=v[1]+'%';el.classList.toggle('bad',bad(el))});
+['pointerup','pointercancel'].forEach(t=>pad.addEventListener(t,e=>{if(!drag||e.pointerId!==drag.id)return;const{el,v,ox,oy}=drag;drag=null;
+  if(el.classList.contains('bad')){v[0]=ox;v[1]=oy;paint();toast("Controls can't overlap")}else save();el.classList.remove('bad')}));
+sizeR.oninput=()=>{const v=lay()[sel.dataset.w],old=v[2];v[2]=+sizeR.value;sel.style.scale=v[2];if(bad(sel)){v[2]=old;sel.style.scale=old;sizeR.value=old;toast('No room to resize there')}};
+sizeR.onchange=save;
+capR.oninput=()=>{if(!sel?.matches('[data-stick]'))return;const v=lay()[sel.dataset.w];v[4]=+capR.value;sel.style.setProperty('--cap-size',`${v[4]*100}%`)};
+capR.onchange=save;
+hideBtn.onclick=()=>{const v=lay()[sel.dataset.w];v[3]=v[3]?0:1;paint();if(!v[3]&&bad(sel)){v[3]=1;paint();toast('No space. Move other controls first')}else save();pick(sel)};
+opR.oninput=()=>{hud.op=+opR.value;pad.style.setProperty('--op',hud.op)};opR.onchange=save;
+$('#resetBtn').onclick=()=>{delete hud[ori()];hud.op=1;opR.value=1;paint();pick(null);save();toast('Layout reset')};
+$('#editBtn').onclick=()=>edit(true);$('#doneBtn').onclick=()=>edit(false);
+$('#hudBtn').onclick=()=>{go('play');edit(true)};
+mq.addEventListener('change',()=>{paint();pick(null)});paint();
+
+apply();
+})();
+</script>
+</body>
+</html>
