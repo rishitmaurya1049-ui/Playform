@@ -58,7 +58,7 @@ h1{font-size:clamp(32px,7vw,50px);font-weight:800;letter-spacing:-.045em;line-he
 @media(max-height:480px){#menu .in{gap:8px;padding:12px 18px;border-radius:22px}.brand .mark{width:28px;height:28px}h1{font-size:clamp(26px,6vh,38px);margin-bottom:5px}.eyebrow{font-size:11px;margin-bottom:5px}.lead{font-size:12px;line-height:1.35}.opts{gap:8px}.opt{padding:8px 36px 8px 12px;border-radius:12px}.opt:after{right:12px;font-size:20px}.opt b{font-size:13px}.opt small{font-size:11px;line-height:1.25}.credits{padding-top:6px}.status{padding:6px 9px}}
 
 /* play */
-#play{flex-direction:column;--k:min(calc((100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/37.5),calc((100svh - 22px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))/13.5))}
+#play{padding:0;flex-direction:column;--k:min(calc((100vw - 24px)/37.5),calc((100svh - 22px)/13.5))}
 .tiny{border:1px solid var(--line);border-radius:12px;padding:8px 13px;font-size:12px;font-weight:600;color:var(--ink);background:var(--btn);box-shadow:0 2px 0 var(--lip);touch-action:manipulation}.tiny:hover{background:var(--btn-h)}
 .conn{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);min-width:0}.conn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .key{--lh:calc(var(--k)*.16);--kbg:var(--kc);--sh:0 var(--lh) 0 var(--klip),0 calc(var(--lh) + var(--k)*.15) calc(var(--k)*.4) #0006,inset 0 1px #ffffff40;--sh-down:0 calc(var(--k)*.03) 0 var(--klip),inset 0 1px #ffffff40;display:grid;place-items:center;border:1px solid #00000030;background:var(--kbg);box-shadow:var(--sh);color:var(--kfg);font-weight:700;font-size:calc(var(--k)*.7);transition:transform .07s,box-shadow .07s,background .07s,color .07s}
@@ -80,7 +80,7 @@ h1{font-size:clamp(32px,7vw,50px);font-weight:800;letter-spacing:-.045em;line-he
 .cb[data-w=plus]{width:calc(var(--k)*2.6);height:calc(var(--k)*2.6);border-radius:50%}
 .cb svg{width:62%;height:62%}
 
-@media(orientation:portrait){#play{--k:min(calc((100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/15.6),calc((100svh - 22px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))/25))}}
+@media(orientation:portrait){#play{--k:min(calc((100vw - 24px)/15.6),calc((100svh - 22px)/25))}}
 
 .bar{position:fixed;top:calc(6px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));right:calc(10px + env(safe-area-inset-right));z-index:8;display:none;align-items:center;padding:7px 9px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--dlg) 92%,transparent);box-shadow:0 8px 24px #0005;backdrop-filter:blur(14px)}
 .ed{display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap}
@@ -244,7 +244,7 @@ $('#play').addEventListener('pointerdown',e=>{if(quickDrawer.classList.contains(
 let hapticsEnabled=true;try{hapticsEnabled=localStorage.getItem('playform-haptics')!=='off'}catch{}
 function showHaptics(){const b=$('#hapticBtn');b.setAttribute('aria-pressed',String(hapticsEnabled));b.textContent=`Haptics: ${hapticsEnabled?'On':'Off'}`}
 $('#hapticBtn').onclick=()=>{hapticsEnabled=!hapticsEnabled;try{localStorage.setItem('playform-haptics',hapticsEnabled?'on':'off')}catch{}showHaptics()};showHaptics();
-function pulseHaptic(){if(!hapticsEnabled)return;if(window.PlayformAndroid){window.PlayformAndroid.haptic();return}try{navigator.vibrate?.(8)}catch{}}
+function pulseHaptic(){if(!hapticsEnabled)return;if(window.PlayformAndroid){try{window.PlayformAndroid.haptic()}catch{}return}try{navigator.vibrate?.(25)}catch{}}
 
 /* buttons */
 function press(key,on){const id=physicalId(key);if(on){pressed.add(id);held.set(key,id);pulseHaptic()}else{pressed.delete(held.get(key)??id);held.delete(key)}apply()}
